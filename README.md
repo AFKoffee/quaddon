@@ -1,4 +1,4 @@
-# The QuaRot Add-On
+# Quaddon - The QuaRot Add-On
 This is a simple demo project to illustrate some key concepts from the [QuaRot](https://arxiv.org/abs/2404.00456) paper.
 
 ## Outline
