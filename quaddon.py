@@ -1,32 +1,46 @@
 ## Quaddon
-import numpy as np
-import hadamard as hd
+import argparse
 import torch
+from comparison import perform_comparison
 
-# 1. Create a random matrix
-rows = 256
-cols = 256
-W_orig = torch.rand((rows, cols)) * 20 - 10
+parser = argparse.ArgumentParser()
 
-# 2. Transform the weights
-W_had = hd.matmul_hadU(W_orig, transpose=False)
+# Arguments for the matrix dimensions
+parser.add_argument("-r", "--rows", default=256)
+parser.add_argument("-c", "--cols", default=256)
 
-# 3. Calculate the µ-incoherance and visualize outlier distribution
-mu_inc_orig = None
-mu_inc_had = None
-# ---> Create cool plot here ...
+# Arguments for the matrix initialization
+parser.add_argument("-d", "--distribution", choices=["uniform", "gaussian"], default="uniform")
+parser.add_argument("-m", "--mean", default=0.0)
+parser.add_argument("-s", "--sigma", default=10.0)
 
-# 4. Quantize the weights
-W_orig_q = None
-W_had_q = None
+# Arguments for matrix quantization
+# parser.add_argument(...)
 
-# 5. Dequantize the weights
-W_orig_d = None
-W_had_d = None
+# Arguments for the sampling process
+parser.add_argument("--seed", default=None)
+parser.add_argument("-n", "--nsamples", default=5)
 
-# 6. Revert the transformation
-W_had_r = hd.matmul_hadU(W_had_d, transpose=True)
+# Helper functions
+def get_distribution(name, mean, sigma):
+    if name == "uniform":
+        low = mean - (sigma/2)
+        high = mean + (sigma/2)
+        return torch.distributions.Uniform(low, high)
+    elif name == "gaussian":
+        return torch.distributions.Normal(mean, sigma)
+    else:
+        raise Exception("Error: Unknown distribution name given!")
 
-# 7. Compare the difference to the original matrix
-diff_orig = torch.sum(torch.abs(W_orig - W_orig_d))
-diff_had = torch.sum(torch.abs(W_orig - W_had_r))
+def setup_rng(dist_name, mean, sigma, seed=None):
+    if seed is not None:
+        torch.manual_seed(seed)
+    
+    return get_distribution(dist_name, mean, sigma)
+
+# Run the actual demo
+args = parser.parse_args()
+distribution = setup_rng(args.distribution, args.mean, args.sigma, args.seed)
+results = perform_comparison(args.nsamples, args.rows, args.cols, distribution)
+
+print(results)
