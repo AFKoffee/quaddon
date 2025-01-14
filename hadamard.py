@@ -79,6 +79,14 @@ def matmul_hadU(X, transpose=False):
 
     return input.view(X.shape) / torch.tensor(n).sqrt()
 
+
+def random_hadamard_matrix(size):
+    # See https://cornell-relaxml.github.io/quip-sharp/ , Section "Randomized Hadamard Transformation"
+    Q = torch.randint(low=0, high=2, size=(size,)).to(torch.float64)
+    Q = Q * 2 - 1
+    Q = torch.diag(Q)
+    return matmul_hadU(Q)
+
 def get_had12():
     return torch.FloatTensor([
         [+1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],

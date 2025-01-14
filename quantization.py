@@ -11,8 +11,24 @@ def get_minq_maxq(bits: int, sym: bool):
     return minq, maxq
 
 def get_asym_quant_params(x, maxq):
-    zero = torch.mean(x, dim=-1)
-    scale = torch.max(torch.abs(x - zero), dim=-1)[0].unsqueeze(1)/maxq
+    shape = x.shape
+    # Per channel quantization
+    x = x.flatten(1)
+
+    tmp = torch.zeros(x.shape[0])
+    xmin = torch.minimum(x.min(1)[0], tmp)
+    xmax = torch.maximum(x.max(1)[0], tmp)
+
+    tmp = (xmin == 0) & (xmax == 0)
+    xmin[tmp] = -1
+    xmax[tmp] = +1
+
+    scale = (xmax - xmin).clamp(min=1e-5) / maxq
+    zero = torch.round(-xmin / scale)
+
+    shape = [-1] + [1] * (len(shape) - 1)
+    scale = scale.reshape(shape)
+    zero = zero.reshape(shape)
     return scale, zero
 
 def asym_quant(x, scale, zero, maxq):
@@ -24,13 +40,13 @@ def asym_quant(x, scale, zero, maxq):
 def asym_dequant(q, scale, zero):
     return scale * (q - zero)
 
-def four_bit_quant(x):
-    _, maxq = get_minq_maxq(4, False)
+def flexible_quant(x, bits=4):
+    _, maxq = get_minq_maxq(bits, False)
     s, z = get_asym_quant_params(x, maxq)
     return asym_quant(x, s, z, maxq)
 
-def four_bit_dequant(q, scale, zero):
+def flexible_dequant(q, scale, zero):
     return asym_dequant(q, scale, zero)
 
-def four_bit_quant_dequant(x):
-    return four_bit_dequant(*four_bit_quant(x))
+def flexible_quant_dequant(x, bits=4):
+    return flexible_dequant(*flexible_quant(x, bits))

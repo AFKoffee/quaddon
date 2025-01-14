@@ -2,17 +2,18 @@
 import argparse
 import torch
 from comparison import perform_comparison
+import json
 
 parser = argparse.ArgumentParser()
 
 # Arguments for the matrix dimensions
-parser.add_argument("-r", "--rows", default=256)
-parser.add_argument("-c", "--cols", default=256)
+parser.add_argument("-r", "--rows", default=512)
+parser.add_argument("-c", "--cols", default=1024)
 
 # Arguments for the matrix initialization
 parser.add_argument("-d", "--distribution", choices=["uniform", "gaussian"], default="uniform")
 parser.add_argument("-m", "--mean", default=0.0)
-parser.add_argument("-s", "--sigma", default=10.0)
+parser.add_argument("-s", "--sigma", default=1.0)
 
 # Arguments for matrix quantization
 # parser.add_argument(...)
@@ -43,4 +44,4 @@ args = parser.parse_args()
 distribution = setup_rng(args.distribution, args.mean, args.sigma, args.seed)
 results = perform_comparison(args.nsamples, args.rows, args.cols, distribution)
 
-print(results)
+print(json.dumps(results, indent=4))
