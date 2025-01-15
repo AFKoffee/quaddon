@@ -15,7 +15,7 @@ parser.add_argument("-c", "--cols", default=512)
 # Arguments for the matrix initialization
 parser.add_argument("-d", "--distribution", choices=["uniform", "gaussian", "poisson"], default="uniform")
 parser.add_argument("-m", "--mean", default=0.0)
-parser.add_argument("-s", "--sigma", default=0.01)
+parser.add_argument("-s", "--sigma", default=0.025)
 
 # Arguments for matrix quantization
 # parser.add_argument(...)
@@ -46,9 +46,9 @@ def setup_rng(dist_name, mean, sigma, seed=None):
 # Run the actual demo
 args = parser.parse_args()
 distribution = setup_rng(args.distribution, args.mean, args.sigma, args.seed)
-results = perform_comparison(args.nsamples, args.rows, args.cols, distribution)
-plot_quantiles(results["stats"]["original"])
-plot_quantiles(results["stats"]["hadamard"])
+results = perform_comparison(args.nsamples, args.rows, args.cols, distribution, args.sigma, 12)
+plot_quantiles(results["stats"]["original"], args.sigma)
+plot_quantiles(results["stats"]["hadamard"], args.sigma)
 
 plt.show()
 

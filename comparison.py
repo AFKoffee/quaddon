@@ -73,7 +73,7 @@ def process_sample(W_orig, results):
     results["mean-absolute-error"]["hadamard"].append(diff_had.item())
     
 
-def perform_comparison(nsamples, rows, cols, distribution):
+def perform_comparison(nsamples, rows, cols, distribution, sigma, outlier_scale):
     results = {
         "incoherence": {
             "original": [],
@@ -107,14 +107,14 @@ def perform_comparison(nsamples, rows, cols, distribution):
         # Sample a random weight matrix according to given
         W_orig = distribution.sample((rows, cols))
 
-        # Make data less distribution like
-        noise = (torch.rand((W_orig.shape[-2], 1)) - 0.5) * 0.02
-        mask = W_orig.abs() < 0.025
-        W_orig += noise * mask
-
         # Introduce some outliers
-        mask = torch.rand_like(W_orig) < 1e-4
-        W_orig[mask] *= 10
+        mask = torch.rand_like(W_orig) < 5e-5
+        W_orig[mask] *= outlier_scale
+
+        # Make data less distribution like
+        noise = (torch.rand((W_orig.shape[-2], 1)) - 0.5) * 2 * sigma
+        mask = W_orig.abs() < 2.5 * sigma
+        W_orig += noise * mask
     
 
         # Process the matrix
