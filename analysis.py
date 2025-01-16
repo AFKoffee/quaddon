@@ -59,8 +59,8 @@ def process_sample(W_orig, results: Results, matrix_analysis=True, validate=True
     results.push_incoherence(mu_inc_orig.item(), mu_inc_had.item())
 
     # 4. Quantize the weights
-    W_orig_q, s_orig, z_orig = flexible_quant(W_orig, 15)
-    W_had_q, s_had, z_had = flexible_quant(W_had, 15)
+    W_orig_q, s_orig, z_orig = flexible_quant(W_orig, 4)
+    W_had_q, s_had, z_had = flexible_quant(W_had, 4)
 
     # 5. Dequantize the weights
     W_orig_d = flexible_dequant(W_orig_q, s_orig, z_orig)
