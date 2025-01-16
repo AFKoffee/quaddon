@@ -1,7 +1,7 @@
 ## Quaddon
 import argparse
 import torch
-from comparison import analyze_model
+from analysis import analyze_model
 from visualization import plot_incoherence, plot_mae, scatter_inc_mae
 import matplotlib.pyplot as plt
 import transformers
