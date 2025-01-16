@@ -1,7 +1,11 @@
 import numpy as np
+from tqdm import tqdm
 from hadamard import random_hadamard_matrix
 from quantization import flexible_quant, flexible_dequant
 import torch
+from utils import WeightDistribution, Results
+from visualization import plot_quantiles
+import matplotlib.pyplot as plt
 
 def mu_incoherence(W):
     # The last two dimensions are expected to be the rows and cols of the matrix
@@ -9,7 +13,7 @@ def mu_incoherence(W):
     cols = W.shape[-1]
     return (torch.max(torch.abs(W)) / torch.norm(W, p="fro")) * np.sqrt(rows * cols) 
 
-def analyze_matrix(matrix, is_transformed, results):
+def analyze_matrix(matrix) -> WeightDistribution:
     m_min = torch.min(matrix, dim=-1).values
     m_quantiles = torch.quantile(
         matrix, 
@@ -19,39 +23,40 @@ def analyze_matrix(matrix, is_transformed, results):
     )
     m_max = torch.max(matrix, dim=-1).values
 
-    stats = results["stats"]
-    if is_transformed:
-        stats = stats["hadamard"]
-    else:
-        stats = stats["original"]
+    return WeightDistribution(
+        min=m_min.tolist(),
+        q1=m_quantiles[0].tolist(),
+        q25=m_quantiles[1].tolist(),
+        q75=m_quantiles[2].tolist(),
+        q99=m_quantiles[3].tolist(),
+        max=m_max.tolist()
+    )
 
-    stats["min"].append(m_min.tolist())
-    stats["1p"].append(m_quantiles[0].tolist())
-    stats["25p"].append(m_quantiles[1].tolist())
-    stats["75p"].append(m_quantiles[2].tolist())
-    stats["99p"].append(m_quantiles[3].tolist())
-    stats["max"].append(m_max.tolist())
-
-def process_sample(W_orig, results):
+def process_sample(W_orig, results: Results, matrix_analysis=True, validate=True):
     # 2. Transform the weights
     Q1 = random_hadamard_matrix(W_orig.shape[-2])
-    assert torch.allclose(Q1 @ Q1.T, torch.eye(Q1.shape[-1], dtype=torch.float64))
-
     Q2 = random_hadamard_matrix(W_orig.shape[-1])
-    assert torch.allclose(Q2 @ Q2.T, torch.eye(Q2.shape[-1], dtype=torch.float64))
-    
     W_had = Q1.T @ W_orig @ Q2
-    assert torch.allclose(Q1 @ W_had @ Q2.T, W_orig)
 
-    analyze_matrix(W_orig, False, results)
-    analyze_matrix(W_had, True, results)
+    if validate:
+        assert torch.allclose(Q1 @ Q1.T, torch.eye(Q1.shape[-1], dtype=torch.float64))
+        assert torch.allclose(Q2 @ Q2.T, torch.eye(Q2.shape[-1], dtype=torch.float64))
+        assert torch.allclose(Q1 @ W_had @ Q2.T, W_orig)
+
+    if matrix_analysis:
+        orig_dist = analyze_matrix(W_orig)
+        had_dist = analyze_matrix(W_had)
+
+        y_limit = max(orig_dist.find_abs_max(), had_dist.find_abs_max())
+        plot_quantiles(orig_dist, y_limit)
+        plot_quantiles(had_dist, y_limit)
+        plt.show()
 
     # 3. Calculate the µ-incoherance
     mu_inc_orig = mu_incoherence(W_orig)
     mu_inc_had = mu_incoherence(W_had)
 
-    results["incoherence"]["original"].append(mu_inc_orig.item())
-    results["incoherence"]["hadamard"].append(mu_inc_had.item())
+    results.push_incoherence(mu_inc_orig.item(), mu_inc_had.item())
 
     # 4. Quantize the weights
     W_orig_q, s_orig, z_orig = flexible_quant(W_orig, 15)
@@ -69,55 +74,13 @@ def process_sample(W_orig, results):
     diff_orig = torch.sum(torch.abs(W_orig - W_orig_d)) / N
     diff_had = torch.sum(torch.abs(W_orig - W_had_r)) / N
 
-    results["mean-absolute-error"]["original"].append(diff_orig.item())
-    results["mean-absolute-error"]["hadamard"].append(diff_had.item())
-    
+    results.push_mae(diff_orig.item(), diff_had.item())
 
-def perform_comparison(nsamples, rows, cols, distribution, sigma, outlier_scale):
-    results = {
-        "incoherence": {
-            "original": [],
-            "hadamard": []
-        },
-        "mean-absolute-error": {
-            "original": [],
-            "hadamard": []
-        },
-        "stats": {
-            "original": {
-                "min": [],
-                "1p": [],
-                "25p": [],
-                "75p": [],
-                "99p": [],
-                "max": [],
-            },
-            "hadamard": {
-                "min": [],
-                "1p": [],
-                "25p": [],
-                "75p": [],
-                "99p": [],
-                "max": [],
-            }
-        }
-    }
+def analyze_model(model):
+    results = Results()
 
-    for _ in range(nsamples):
-        # Sample a random weight matrix according to given
-        W_orig = distribution.sample((rows, cols))
+    for block in tqdm(model.layers):
+        weights = block.mlp.down_proj.weight
+        process_sample(weights.to(dtype=torch.float64), results, False, False)
 
-        # Introduce some outliers
-        mask = torch.rand_like(W_orig) < 5e-5
-        W_orig[mask] *= outlier_scale
-
-        # Make data less distribution like
-        noise = (torch.rand((W_orig.shape[-2], 1)) - 0.5) * 2 * sigma
-        mask = W_orig.abs() < 2.5 * sigma
-        W_orig += noise * mask
-    
-
-        # Process the matrix
-        process_sample(W_orig.to(dtype=torch.float64), results)
-    
     return results
