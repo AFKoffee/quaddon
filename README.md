@@ -12,10 +12,5 @@ Actions performed by the demo:
 4. Revert the transformation performed during incoherence processing
 5. Compare both matrices to the original matrix to show incoherence processing results in better reconstruction
 
-Optional extension idea: Show computational invariance
- 
-1. Implement a simple pre-RMSNorm FFN Part of a transformer block
-2. Prepare the block as proposed in the paper and compare both results when using the same input
-
 ## Getting Started
 The project assumes _Python 3.9_ and needs the dependencies specified in _requirements.txt_.
