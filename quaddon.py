@@ -5,7 +5,6 @@ from analysis import analyze_model
 from visualization import plot_incoherence, plot_mae, scatter_inc_mae
 import matplotlib.pyplot as plt
 import transformers
-import json
 
 def main():
     # Setup the cli

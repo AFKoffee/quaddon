@@ -4,12 +4,31 @@ from collections import defaultdict
 
 @dataclass
 class WeightDistribution:
-    min: list[float]
-    q1: list[float]
-    q25: list[float]
-    q75: list[float]
-    q99: list[float]
-    max: list[float]
+    layer_idx: int
+    is_transformed: bool
+    min: list[float] = field(default_factory=lambda: [])
+    p1: list[float] = field(default_factory=lambda: [])
+    p25: list[float] = field(default_factory=lambda: [])
+    p75: list[float] = field(default_factory=lambda: [])
+    p99: list[float] = field(default_factory=lambda: [])
+    max: list[float] = field(default_factory=lambda: [])
+
+    def fill(
+        self, 
+        min: list[float], 
+        p1: list[float], 
+        p25: list[float],
+        p75: list[float],
+        p99: list[float],
+        max: list[float]
+    ):
+        self.min = min
+        self.p1 = p1
+        self.p25 = p25
+        self.p75 = p75
+        self.p99 = p99
+        self.max = max
+        
 
     def find_abs_max(self) -> float:
         min_max = np.max(np.abs(self.min))
@@ -17,11 +36,11 @@ class WeightDistribution:
         return max(min_max, max_max)
     
     def get_nfeatures(self) -> int:
-        assert len(self.min) == len(self.q1)
-        assert len(self.q1) == len(self.q25)
-        assert len(self.q25) == len(self.q75)
-        assert len(self.q75) == len(self.q99)
-        assert len(self.q99) == len(self.max)
+        assert len(self.min) == len(self.p1)
+        assert len(self.p1) == len(self.p25)
+        assert len(self.p25) == len(self.p75)
+        assert len(self.p75) == len(self.p99)
+        assert len(self.p99) == len(self.max)
 
         return len(self.min)
     

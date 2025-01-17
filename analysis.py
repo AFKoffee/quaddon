@@ -13,7 +13,7 @@ def mu_incoherence(W):
     cols = W.shape[-1]
     return (torch.max(torch.abs(W)) / torch.norm(W, p="fro")) * np.sqrt(rows * cols) 
 
-def analyze_matrix(matrix) -> WeightDistribution:
+def analyze_matrix(matrix, results):
     m_min = torch.min(matrix, dim=-1).values
     m_quantiles = torch.quantile(
         matrix, 
@@ -23,16 +23,16 @@ def analyze_matrix(matrix) -> WeightDistribution:
     )
     m_max = torch.max(matrix, dim=-1).values
 
-    return WeightDistribution(
+    results.fill(
         min=m_min.tolist(),
-        q1=m_quantiles[0].tolist(),
-        q25=m_quantiles[1].tolist(),
-        q75=m_quantiles[2].tolist(),
-        q99=m_quantiles[3].tolist(),
+        p1=m_quantiles[0].tolist(),
+        p25=m_quantiles[1].tolist(),
+        p75=m_quantiles[2].tolist(),
+        p99=m_quantiles[3].tolist(),
         max=m_max.tolist()
     )
 
-def process_sample(W_orig, results: Results, matrix_analysis=True, validate=True):
+def process_sample(W_orig, results: Results, layer_idx: int, matrix_analysis=True, validate=True):
     # 2. Transform the weights
     Q1 = random_hadamard_matrix(W_orig.shape[-2])
     Q2 = random_hadamard_matrix(W_orig.shape[-1])
@@ -44,8 +44,12 @@ def process_sample(W_orig, results: Results, matrix_analysis=True, validate=True
         assert torch.allclose(Q1 @ W_had @ Q2.T, W_orig)
 
     if matrix_analysis:
-        orig_dist = analyze_matrix(W_orig)
-        had_dist = analyze_matrix(W_had)
+        
+        orig_dist = WeightDistribution(layer_idx, False)
+        analyze_matrix(W_orig, orig_dist)
+
+        had_dist = WeightDistribution(layer_idx, True)
+        analyze_matrix(W_had, had_dist)
 
         y_limit = max(orig_dist.find_abs_max(), had_dist.find_abs_max())
         plot_quantiles(orig_dist, y_limit)
@@ -79,8 +83,8 @@ def process_sample(W_orig, results: Results, matrix_analysis=True, validate=True
 def analyze_model(model):
     results = Results()
 
-    for block in tqdm(model.layers):
+    for (idx, block) in enumerate(tqdm(model.layers)):
         weights = block.mlp.down_proj.weight
-        process_sample(weights.to(dtype=torch.float64), results, False, False)
+        process_sample(weights.to(dtype=torch.float64), results, idx, False, False)
 
     return results

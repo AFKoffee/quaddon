@@ -1,5 +1,7 @@
 import torch
 
+# Adapted from https://github.com/spcl/QuaRot/blob/main/fake_quant/quant_utils.py
+
 def get_minq_maxq(bits: int, sym: bool):
     if sym:
         maxq = torch.tensor(2**(bits-1)-1)

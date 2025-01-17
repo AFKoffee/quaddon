@@ -1,5 +1,7 @@
 import torch
 
+# Adapted from https://github.com/spcl/QuaRot/blob/main/quarot/functional/hadamard.py
+
 def get_hadK(n, transpose=False):
     hadK, K = None, None
     if n % 172 == 0:  # llama-2-7b up
@@ -55,7 +57,7 @@ def get_hadK(n, transpose=False):
 def is_pow2(n):
     return (n & (n - 1) == 0) and (n > 0)
 
-# Whyld implementation of a fast walsh-hadamard transform using torch views??!
+# Wyld implementation of a fast walsh-hadamard transform using torch views??!
 def matmul_hadU(X, transpose=False):
     n = X.shape[-1]
     hadK, K = get_hadK(n, transpose)

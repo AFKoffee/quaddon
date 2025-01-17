@@ -6,8 +6,8 @@ At the time of this writing QuaRot is a novel quantization approach for end-to-e
 
 Actions performed by the demo:
 
-1. Transform sample weight matrices using hadamard transformations
-2. Quantize the original matrix and the processed matrix to 4-bit using RTN
+1. Transform real-world example weight matrices using hadamard transformations
+2. Quantize the original matrix and the processed matrix to low bitwidth (4 to 8 bit) using RTN
 3. Dequantize both matrices again.
 4. Revert the transformation performed during incoherence processing
 5. Compare both matrices to the original matrix to show incoherence processing results in better reconstruction
