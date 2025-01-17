@@ -12,7 +12,7 @@ import os
 
 def main():
     # Setup the cli
-    formatter = lambda prog: argparse.HelpFormatter(prog,max_help_position=40)
+    formatter = lambda prog: argparse.HelpFormatter(prog,max_help_position=60)
     parser = argparse.ArgumentParser(formatter_class=formatter)
 
     # Execution options
@@ -22,6 +22,7 @@ def main():
     parser.add_argument("-q", "--quantile-analysis", action="store_true", help="perform a quantile analysis of the weights")
     parser.add_argument("--validate", action="store_true", help="include validation checks")
     parser.add_argument("-o", "--out-dir", default="out", help="output directory")
+    parser.add_argument("-m", "--module", default="down-proj", choices=["down-proj", "qkv-proj"], help="the linear module to analyze per transformer block")
 
     # Seed option for deteministic randomized hadamard matrices
     parser.add_argument("--seed", default=None, help="set a seed for deterministic randomized hadamard matrices")
@@ -43,6 +44,7 @@ def main():
         args.quantile_analysis, 
         args.validate, 
         args.out_dir,
+        args.module,
         seed
     )
 

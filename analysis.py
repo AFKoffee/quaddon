@@ -85,7 +85,13 @@ def analyze_model(model, config: Config):
     results = Results()
 
     for (idx, block) in enumerate(tqdm(model.layers)):
-        weights = block.mlp.down_proj.weight
+        # Select module to analyze
+        if config.module == "down-proj":
+            weights = block.mlp.down_proj.weight
+        elif config.module == "qkv-proj":
+            weights = block.self_attn.qkv_proj.weight
+        
+        # Analyze weights
         process_sample(weights.to(dtype=torch.float64), results, idx, config)
         
         # Close all figures before next loop iteration

@@ -11,6 +11,7 @@ class Config:
     quantile_analysis: bool
     validate: bool
     out_dir: str
+    module: str
     seed: int
 
 
