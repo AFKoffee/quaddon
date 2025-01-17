@@ -1,13 +1,14 @@
 import matplotlib.pyplot as plt
-from utils import WeightDistribution, Results
+from utils import WeightDistribution, Results, Config
 import numpy as np
+import os
 
-def plot_quantiles(analysis: WeightDistribution, y_limit):
+def plot_quantiles(analysis: WeightDistribution, y_limit: float, config: Config):
     plt.figure()
 
     plt.ylim(-y_limit, y_limit)
 
-    x = np.arange(0, analysis.get_nfeatures())
+    x = np.arange(0, analysis.get_nfeatures(config.validate))
     plt.plot(x, analysis.min, color="blue", label="min/max")
     plt.plot(x, analysis.max, color="blue", label="min/max")
     plt.plot(x, analysis.p1, color="red", label="1p/99p")
@@ -31,12 +32,19 @@ def plot_quantiles(analysis: WeightDistribution, y_limit):
     plt.xlabel("Hidden Dimension Index")
     plt.ylabel("Weight Value")
 
+    if config.save:
+        plt.savefig(os.sep.join(
+            [config.out_dir, "w_dist_{idx}_{mode}.png".format(idx=analysis.layer_idx, mode="hadamard" if analysis.is_transformed else "original")]
+        ))
 
-def plot_incoherence(results: Results):
+
+def plot_incoherence(results: Results, config: Config):
     inc_orig = results.get_orig_incoherence()
     inc_had = results.get_had_incoherence()
 
-    assert len(inc_orig) == len(inc_had)
+    if config.validate:
+        assert len(inc_orig) == len(inc_had)
+    
     x = np.arange(0, len(inc_orig))
 
     plt.figure()
@@ -48,12 +56,19 @@ def plot_incoherence(results: Results):
     plt.xlabel("Block Idx")
     plt.ylabel("µ-incoherence")
 
+    if config.save:
+        plt.savefig(os.sep.join(
+            [config.out_dir, "incoherence.png"]
+        ))
 
-def plot_mae(results: Results):
+
+def plot_mae(results: Results, config: Config):
     mae_orig = results.get_orig_mae()
     mae_had = results.get_had_mae()
 
-    assert len(mae_orig) == len(mae_had)
+    if config.validate:
+        assert len(mae_orig) == len(mae_had)
+    
     x = np.arange(0, len(mae_orig))
 
     plt.figure()
@@ -65,17 +80,23 @@ def plot_mae(results: Results):
     plt.xlabel("Block Idx")
     plt.ylabel("Mean-Absolute-Error (MAE)")
 
+    if config.save:
+        plt.savefig(os.sep.join(
+            [config.out_dir, "mae.png"]
+        ))
 
-def scatter_inc_mae(results: Results):
+
+def scatter_inc_mae(results: Results, config: Config):
     inc_orig = results.get_orig_incoherence()
     mae_orig = results.get_orig_mae()
 
     inc_had = results.get_had_incoherence()
     mae_had = results.get_had_mae()
 
-    assert len(inc_orig) == len(inc_had)
-    assert len(inc_had) == len(mae_orig)
-    assert len(mae_orig) == len(mae_had)
+    if config.validate:
+        assert len(inc_orig) == len(inc_had)
+        assert len(inc_had) == len(mae_orig)
+        assert len(mae_orig) == len(mae_had)
 
     plt.figure()
     plt.scatter(inc_orig, mae_orig, color="blue", label="original weights")
@@ -85,3 +106,8 @@ def scatter_inc_mae(results: Results):
     plt.title("µ-incoherence vs. Mean-Absolute-Error per Transformer Block")
     plt.xlabel("µ-incoherence")
     plt.ylabel("Mean-Absolute-Error (MAE)")
+
+    if config.save:
+        plt.savefig(os.sep.join(
+            [config.out_dir, "inc_vs_mae.png"]
+        ))

@@ -1,6 +1,18 @@
 import numpy as np
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, is_dataclass, asdict
 from collections import defaultdict
+import json
+
+@dataclass
+class Config:
+    bitwidth: int
+    display: bool
+    save: bool
+    quantile_analysis: bool
+    validate: bool
+    out_dir: str
+    seed: int
+
 
 @dataclass
 class WeightDistribution:
@@ -35,12 +47,13 @@ class WeightDistribution:
         max_max = np.max(self.max)
         return max(min_max, max_max)
     
-    def get_nfeatures(self) -> int:
-        assert len(self.min) == len(self.p1)
-        assert len(self.p1) == len(self.p25)
-        assert len(self.p25) == len(self.p75)
-        assert len(self.p75) == len(self.p99)
-        assert len(self.p99) == len(self.max)
+    def get_nfeatures(self, validate: bool) -> int:
+        if validate:
+            assert len(self.min) == len(self.p1)
+            assert len(self.p1) == len(self.p25)
+            assert len(self.p25) == len(self.p75)
+            assert len(self.p75) == len(self.p99)
+            assert len(self.p99) == len(self.max)
 
         return len(self.min)
     
@@ -69,3 +82,9 @@ class Results:
     
     def get_had_mae(self) -> list[float]:
         return self.mae["hadamard"]
+
+class EnhancedJSONEncoder(json.JSONEncoder):
+        def default(self, o):
+            if is_dataclass(o) and not isinstance(o, type):
+                return asdict(o)
+            return super().default(o)
