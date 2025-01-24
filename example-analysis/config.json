@@ -1,0 +1,10 @@
+{
+    "bitwidth": 4,
+    "display": false,
+    "save": true,
+    "quantile_analysis": true,
+    "validate": false,
+    "out_dir": "out",
+    "module": "down-proj",
+    "seed": 10995562280685199870
+}
